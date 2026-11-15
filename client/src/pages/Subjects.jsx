@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import AdminLayout from "../components/AdminLayout";
 
 const initialFormData = {
   name: "",
@@ -8,28 +9,57 @@ const initialFormData = {
   department: "",
   semester: "",
   credits: "",
+  teacher: "",
 };
 
 const Subjects = () => {
   const [subjects, setSubjects] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingSubjectId, setEditingSubjectId] = useState(null);
+  const [search, setSearch] = useState("");
   const [formData, setFormData] = useState(initialFormData);
 
-  // Fetch all subjects
+  const query = search.trim().toLowerCase();
+  const filteredSubjects = query
+    ? subjects.filter((subject) =>
+        [
+          subject.name,
+          subject.subjectCode,
+          subject.department,
+          subject.teacher?.name,
+        ]
+          .filter(Boolean)
+          .some((field) => String(field).toLowerCase().includes(query))
+      )
+    : subjects;
+
+  // Fetch all subjects and the teachers who can be assigned
   const fetchSubjects = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/subjects");
-      setSubjects(response.data.subjects);
-      setError("");
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Failed to fetch subjects."
-      );
+
+      const [subjectsRes, teachersRes] = await Promise.allSettled([
+        api.get("/subjects"),
+        api.get("/students?role=teacher"),
+      ]);
+
+      if (subjectsRes.status === "fulfilled") {
+        setSubjects(subjectsRes.value.data.subjects);
+        setError("");
+      } else {
+        setError(
+          subjectsRes.reason.response?.data?.message ||
+            "Failed to fetch subjects."
+        );
+      }
+
+      if (teachersRes.status === "fulfilled") {
+        setTeachers(teachersRes.value.data.students);
+      }
     } finally {
       setLoading(false);
     }
@@ -57,6 +87,7 @@ const Subjects = () => {
       department: subject.department || "",
       semester: subject.semester ?? "",
       credits: subject.credits ?? "",
+      teacher: subject.teacher?._id || "",
     });
 
     setShowForm(true);
@@ -82,6 +113,7 @@ const Subjects = () => {
         ...formData,
         semester: Number(formData.semester),
         credits: Number(formData.credits),
+        teacher: formData.teacher || null,
       };
 
       if (editingSubjectId) {
@@ -130,6 +162,7 @@ const Subjects = () => {
   };
 
   return (
+    <AdminLayout title="Subject Management">
     <div className="page-container">
       <div className="page-header">
         <div>
@@ -207,6 +240,20 @@ const Subjects = () => {
             required
           />
 
+          <select
+            name="teacher"
+            value={formData.teacher}
+            onChange={handleChange}
+            aria-label="Assigned teacher"
+          >
+            <option value="">No teacher assigned</option>
+            {teachers.map((teacher) => (
+              <option key={teacher._id} value={teacher._id}>
+                {teacher.name} ({teacher.email})
+              </option>
+            ))}
+          </select>
+
           <button type="submit">
             {editingSubjectId ? "Update Subject" : "Save Subject"}
           </button>
@@ -217,11 +264,24 @@ const Subjects = () => {
         </form>
       )}
 
+      {!loading && subjects.length > 0 && (
+        <input
+          className="table-search"
+          type="search"
+          placeholder="Search by subject name, code, department or teacher..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search subjects"
+        />
+      )}
+
       <div className="table-container">
         {loading ? (
           <p>Loading subjects...</p>
         ) : subjects.length === 0 ? (
           <p>No subjects found.</p>
+        ) : filteredSubjects.length === 0 ? (
+          <p>No subjects match your search.</p>
         ) : (
           <table>
             <thead>
@@ -231,18 +291,20 @@ const Subjects = () => {
                 <th>Department</th>
                 <th>Semester</th>
                 <th>Credits</th>
+                <th>Teacher</th>
                 <th>Actions</th>
               </tr>
             </thead>
 
             <tbody>
-              {subjects.map((subject) => (
+              {filteredSubjects.map((subject) => (
                 <tr key={subject._id}>
                   <td>{subject.name}</td>
                   <td>{subject.subjectCode}</td>
                   <td>{subject.department}</td>
                   <td>{subject.semester}</td>
                   <td>{subject.credits}</td>
+                  <td>{subject.teacher?.name || "—"}</td>
                   <td>
                     <button
                       type="button"
@@ -266,6 +328,7 @@ const Subjects = () => {
         )}
       </div>
     </div>
+    </AdminLayout>
   );
 };
 

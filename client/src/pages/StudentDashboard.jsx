@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, NavLink } from "react-router-dom";
 import api from "../services/api";
 
 const StudentDashboard = () => {
@@ -70,9 +70,9 @@ const StudentDashboard = () => {
     <div className="student-layout">
       <aside className="student-sidebar">
         <div className="sidebar-brand">
-          <div className="brand-icon">E</div>
+          <div className="brand-icon">R</div>
           <div>
-            <h2>EduTrack</h2>
+            <h2>ResultHub</h2>
             <span>STUDENT PORTAL</span>
           </div>
         </div>
@@ -80,15 +80,26 @@ const StudentDashboard = () => {
         <div className="sidebar-section-label">STUDENT MENU</div>
 
         <nav className="sidebar-nav">
-          <div className="sidebar-link active">
+          <NavLink
+            to="/student"
+            end
+            className={({ isActive }) =>
+              isActive ? "sidebar-link active" : "sidebar-link"
+            }
+          >
             <span className="sidebar-icon">▦</span>
             My Dashboard
-          </div>
+          </NavLink>
 
-          <a href="/student/results" className="sidebar-link">
+          <NavLink
+            to="/student/results"
+            className={({ isActive }) =>
+              isActive ? "sidebar-link active" : "sidebar-link"
+            }
+          >
             <span className="sidebar-icon">◈</span>
             My Results
-          </a>
+          </NavLink>
         </nav>
 
         <div className="sidebar-footer">
@@ -110,9 +121,18 @@ const StudentDashboard = () => {
             <h2>My Dashboard</h2>
           </div>
 
-          <button className="logout-button" onClick={handleLogout}>
-            Logout
-          </button>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              className="logout-button"
+              onClick={() => navigate("/change-password")}
+            >
+              Change Password
+            </button>
+
+            <button className="logout-button" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
         </header>
 
         <main className="student-content">

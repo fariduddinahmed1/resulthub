@@ -1,8 +1,17 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, NavLink } from "react-router-dom";
 import api from "../services/api";
+
+const escapeHtml = (value) =>
+  String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[char]);
 
 const StudentResults = () => {
   const { user, logout } = useAuth();
@@ -15,6 +24,59 @@ const StudentResults = () => {
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  // Build a self-contained HTML file from the loaded results and let
+  // the browser save it — no server round trip, no extra libraries.
+  const handleDownload = () => {
+    const rows = results
+      .map(
+        (result) => `
+      <tr>
+        <td>${escapeHtml(result.exam?.title)}</td>
+        <td>${escapeHtml(result.exam?.subject?.name)} (${escapeHtml(result.exam?.subject?.subjectCode)})</td>
+        <td>${result.marksObtained} / ${result.exam?.totalMarks}</td>
+        <td>${result.percentage}%</td>
+        <td>${escapeHtml(result.grade)}</td>
+        <td>${escapeHtml(result.status)}</td>
+      </tr>`
+      )
+      .join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Results - ${escapeHtml(user?.name)}</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 40px; color: #1e293b; }
+  h1 { margin-bottom: 4px; }
+  p.meta { color: #64748b; margin-top: 0; }
+  table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+  th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; font-size: 14px; }
+  th { background: #f1f5f9; }
+</style>
+</head>
+<body>
+<h1>Student Result Management System</h1>
+<p class="meta">${escapeHtml(user?.name)}${user?.rollNumber ? ` - Roll ${escapeHtml(user.rollNumber)}` : ""} - Generated ${new Date().toLocaleDateString()}</p>
+<table>
+  <thead>
+    <tr><th>Examination</th><th>Subject</th><th>Marks</th><th>Percentage</th><th>Grade</th><th>Status</th></tr>
+  </thead>
+  <tbody>${rows}
+  </tbody>
+</table>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `results-${(user?.rollNumber || user?.name || "student").replace(/\s+/g, "-").toLowerCase()}.html`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   useEffect(() => {
@@ -39,9 +101,9 @@ const StudentResults = () => {
     <div className="student-layout">
       <aside className="student-sidebar">
         <div className="sidebar-brand">
-          <div className="brand-icon">E</div>
+          <div className="brand-icon">R</div>
           <div>
-            <h2>EduTrack</h2>
+            <h2>ResultHub</h2>
             <span>STUDENT PORTAL</span>
           </div>
         </div>
@@ -49,15 +111,26 @@ const StudentResults = () => {
         <div className="sidebar-section-label">STUDENT MENU</div>
 
         <nav className="sidebar-nav">
-          <a href="/student" className="sidebar-link">
+          <NavLink
+            to="/student"
+            end
+            className={({ isActive }) =>
+              isActive ? "sidebar-link active" : "sidebar-link"
+            }
+          >
             <span className="sidebar-icon">▦</span>
             My Dashboard
-          </a>
+          </NavLink>
 
-          <a href="/student/results" className="sidebar-link active">
+          <NavLink
+            to="/student/results"
+            className={({ isActive }) =>
+              isActive ? "sidebar-link active" : "sidebar-link"
+            }
+          >
             <span className="sidebar-icon">◈</span>
             My Results
-          </a>
+          </NavLink>
         </nav>
 
         <div className="sidebar-footer">
@@ -77,9 +150,18 @@ const StudentResults = () => {
             <span className="topbar-label">STUDENT PORTAL</span>
             <h2>My Examination Results</h2>
           </div>
-          <button className="logout-button" onClick={handleLogout}>
-            Logout
-          </button>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              className="logout-button"
+              onClick={() => navigate("/change-password")}
+            >
+              Change Password
+            </button>
+
+            <button className="logout-button" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
         </header>
 
         <main className="student-content">
@@ -99,6 +181,16 @@ const StudentResults = () => {
               <h2>Examination Records</h2>
               <p>Your published examination results</p>
             </div>
+
+            {!loading && results.length > 0 && (
+              <button
+                type="button"
+                onClick={handleDownload}
+                style={{ marginBottom: "16px" }}
+              >
+                Download Results
+              </button>
+            )}
 
             {loading && <p>Loading your results...</p>}
 

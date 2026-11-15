@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import AdminLayout from "../components/AdminLayout";
 
 const initialFormData = {
   title: "",
@@ -20,21 +21,55 @@ const Exams = () => {
   const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingExamId, setEditingExamId] = useState(null);
+  const [search, setSearch] = useState("");
   const [formData, setFormData] = useState(initialFormData);
+
+  const query = search.trim().toLowerCase();
+  const filteredExams = query
+    ? exams.filter((exam) =>
+        [
+          exam.title,
+          exam.subject?.name,
+          exam.subject?.subjectCode,
+          exam.examType,
+          exam.academicYear,
+        ]
+          .filter(Boolean)
+          .some((field) => String(field).toLowerCase().includes(query))
+      )
+    : exams;
 
   // Fetch exams and subjects
   const fetchData = async () => {
     try {
       setLoading(true);
 
-      const [examsResponse, subjectsResponse] = await Promise.all([
+      const settled = await Promise.allSettled([
         api.get("/exams"),
         api.get("/subjects"),
       ]);
 
-      setExams(examsResponse.data.exams);
-      setSubjects(subjectsResponse.data.subjects);
-      setError("");
+      const [examsResponse, subjectsResponse] = settled;
+
+      if (examsResponse.status === "fulfilled") {
+        setExams(examsResponse.value.data.exams);
+      }
+
+      if (subjectsResponse.status === "fulfilled") {
+        setSubjects(subjectsResponse.value.data.subjects);
+      }
+
+      const firstFailure = settled.find((r) => r.status === "rejected");
+
+      if (firstFailure) {
+        const err = firstFailure.reason;
+        setError(
+          err.response?.data?.message ||
+            "Failed to fetch exams or subjects."
+        );
+      } else {
+        setError("");
+      }
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -141,6 +176,7 @@ const Exams = () => {
   };
 
   return (
+    <AdminLayout title="Exam Management">
     <div className="page-container">
       <div className="page-header">
         <div>
@@ -282,11 +318,24 @@ const Exams = () => {
 )}
 
 
+      {!loading && exams.length > 0 && (
+        <input
+          className="table-search"
+          type="search"
+          placeholder="Search by title, subject, type or year..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search exams"
+        />
+      )}
+
       <div className="table-container">
         {loading ? (
           <p>Loading exams...</p>
         ) : exams.length === 0 ? (
           <p>No exams found.</p>
+        ) : filteredExams.length === 0 ? (
+          <p>No exams match your search.</p>
         ) : (
           <table>
             <thead>
@@ -303,7 +352,7 @@ const Exams = () => {
             </thead>
 
             <tbody>
-              {exams.map((exam) => (
+              {filteredExams.map((exam) => (
                 <tr key={exam._id}>
                   <td>{exam.title}</td>
                   <td>
@@ -340,6 +389,7 @@ const Exams = () => {
         )}
       </div>
     </div>
+    </AdminLayout>
   );
 };
 

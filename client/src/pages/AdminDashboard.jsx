@@ -1,12 +1,14 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate, NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import api from "../services/api";
+import AdminLayout from "../components/AdminLayout";
+import GradeChart from "../components/GradeChart";
+import navigationItems from "../navigationItems";
 
 const AdminDashboard = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [stats, setStats] = useState({
     students: 0,
@@ -23,31 +25,40 @@ const AdminDashboard = () => {
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [analyticsError, setAnalyticsError] = useState("");
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
         setLoading(true);
         setError("");
 
-        const [studentsRes, subjectsRes, examsRes, resultsRes] =
-          await Promise.all([
-            api.get("/students"),
-            api.get("/subjects"),
-            api.get("/exams"),
-            api.get("/results"),
-          ]);
+        const settled = await Promise.allSettled([
+          api.get("/students"),
+          api.get("/subjects"),
+          api.get("/exams"),
+          api.get("/results"),
+        ]);
 
+        const [studentsRes, subjectsRes, examsRes, resultsRes] = settled;
+
+        // Render whatever succeeded instead of failing the whole page
         setStats({
-          students: studentsRes.data.count,
-          subjects: subjectsRes.data.count,
-          exams: examsRes.data.count,
-          results: resultsRes.data.count,
+          students: studentsRes.status === "fulfilled" ? studentsRes.value.data.count : 0,
+          subjects: subjectsRes.status === "fulfilled" ? subjectsRes.value.data.count : 0,
+          exams: examsRes.status === "fulfilled" ? examsRes.value.data.count : 0,
+          results: resultsRes.status === "fulfilled" ? resultsRes.value.data.count : 0,
         });
+
+        const firstFailure = settled.find((r) => r.status === "rejected");
+
+        if (firstFailure) {
+          const err = firstFailure.reason;
+          setError(
+            err.response?.data?.message ||
+              "Some dashboard statistics could not be loaded."
+          );
+        } else {
+          setError("");
+        }
       } catch (err) {
         setError(
           err.response?.data?.message ||
@@ -63,13 +74,32 @@ const AdminDashboard = () => {
         setAnalyticsLoading(true);
         setAnalyticsError("");
 
-        const [overviewRes, subjectsRes] = await Promise.all([
+        const [overviewSettled, subjectsSettled] = await Promise.allSettled([
           api.get("/analytics/overview"),
           api.get("/analytics/subjects"),
         ]);
 
-        setAnalytics(overviewRes.data.analytics);
-        setSubjectAnalytics(subjectsRes.data.subjects);
+        if (overviewSettled.status === "fulfilled") {
+          setAnalytics(overviewSettled.value.data.analytics);
+        }
+
+        if (subjectsSettled.status === "fulfilled") {
+          setSubjectAnalytics(subjectsSettled.value.data.subjects);
+        }
+
+        const firstFailure = [overviewSettled, subjectsSettled].find(
+          (r) => r.status === "rejected"
+        );
+
+        if (firstFailure) {
+          const err = firstFailure.reason;
+          setAnalyticsError(
+            err.response?.data?.message ||
+              "Some performance analytics could not be loaded."
+          );
+        } else {
+          setAnalyticsError("");
+        }
       } catch (err) {
         setAnalyticsError(
           err.response?.data?.message ||
@@ -83,14 +113,6 @@ const AdminDashboard = () => {
     fetchDashboardStats();
     fetchAnalytics();
   }, []);
-
-  const navigationItems = [
-    { path: "/admin", label: "Dashboard", icon: "▦", end: true },
-    { path: "/admin/students", label: "Students", icon: "♙" },
-    { path: "/admin/subjects", label: "Subjects", icon: "◤" },
-    { path: "/admin/exams", label: "Exams", icon: "◣" },
-    { path: "/admin/results", label: "Results", icon: "◈" },
-  ];
 
   const statCards = [
     {
@@ -119,59 +141,8 @@ const AdminDashboard = () => {
     },
   ];
 
-  const grades = ["A+", "A", "B", "C", "D", "E", "F"];
-
   return (
-    <div className="admin-layout">
-      <aside className="admin-sidebar">
-        <div className="sidebar-brand">
-          <div className="brand-icon">E</div>
-          <div>
-            <h2>EduTrack</h2>
-            <span>RESULT MANAGEMENT</span>
-          </div>
-        </div>
-
-        <div className="sidebar-section-label">MAIN MENU</div>
-
-        <nav className="sidebar-nav">
-          {navigationItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.end}
-              className={({ isActive }) =>
-                isActive ? "sidebar-link active" : "sidebar-link"
-              }
-            >
-              <span className="sidebar-icon">{item.icon}</span>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="admin-avatar">A</div>
-          <div className="sidebar-user">
-            <strong>{user?.name}</strong>
-            <span>Administrator</span>
-          </div>
-        </div>
-      </aside>
-
-      <div className="admin-main">
-        <header className="admin-topbar">
-          <div>
-            <span className="topbar-label">ADMINISTRATION</span>
-            <h2>Dashboard Overview</h2>
-          </div>
-
-          <button className="logout-button" onClick={handleLogout}>
-            Logout
-          </button>
-        </header>
-
-        <main className="admin-content">
+    <AdminLayout title="Dashboard Overview">
           <div className="welcome-section">
             <div>
               <h1>Welcome back, {user?.name}!</h1>
@@ -267,19 +238,7 @@ const AdminDashboard = () => {
                   <p>Number of results in each grade category</p>
                 </div>
 
-                <div className="dashboard-cards">
-                  {grades.map((grade) => (
-                    <div className="dashboard-card" key={grade}>
-                      <div className="stat-card-top">
-                        <span>Grade {grade}</span>
-                      </div>
-                      <h3>
-                        {analytics.gradeDistribution?.[grade] ?? 0}
-                      </h3>
-                      <p>Recorded results</p>
-                    </div>
-                  ))}
-                </div>
+                <GradeChart distribution={analytics.gradeDistribution} />
               </>
             )}
           </section>
@@ -382,9 +341,7 @@ const AdminDashboard = () => {
               ))}
             </div>
           </section>
-        </main>
-      </div>
-    </div>
+    </AdminLayout>
   );
 };
 

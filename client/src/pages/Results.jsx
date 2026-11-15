@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import AdminLayout from "../components/AdminLayout";
 
 const initialFormData = {
   student: "",
@@ -19,24 +20,63 @@ const Results = () => {
 
   const [showForm, setShowForm] = useState(false);
   const [editingResultId, setEditingResultId] = useState(null);
+  const [search, setSearch] = useState("");
   const [formData, setFormData] = useState(initialFormData);
+
+  const query = search.trim().toLowerCase();
+  const filteredResults = query
+    ? results.filter((result) =>
+        [
+          result.student?.name,
+          result.student?.rollNumber,
+          result.exam?.title,
+          result.exam?.subject?.name,
+          result.exam?.subject?.subjectCode,
+          result.enteredBy?.name,
+          result.grade,
+          result.status,
+        ]
+          .filter(Boolean)
+          .some((field) => String(field).toLowerCase().includes(query))
+      )
+    : results;
 
   // Fetch results, students and exams
   const fetchData = async () => {
     try {
       setLoading(true);
 
-      const [resultsRes, studentsRes, examsRes] =
-        await Promise.all([
-          api.get("/results"),
-          api.get("/students"),
-          api.get("/exams"),
-        ]);
+      const settled = await Promise.allSettled([
+        api.get("/results"),
+        api.get("/students"),
+        api.get("/exams"),
+      ]);
 
-      setResults(resultsRes.data.results);
-      setStudents(studentsRes.data.students);
-      setExams(examsRes.data.exams);
-      setError("");
+      const [resultsRes, studentsRes, examsRes] = settled;
+
+      if (resultsRes.status === "fulfilled") {
+        setResults(resultsRes.value.data.results);
+      }
+
+      if (studentsRes.status === "fulfilled") {
+        setStudents(studentsRes.value.data.students);
+      }
+
+      if (examsRes.status === "fulfilled") {
+        setExams(examsRes.value.data.exams);
+      }
+
+      const firstFailure = settled.find((r) => r.status === "rejected");
+
+      if (firstFailure) {
+        const err = firstFailure.reason;
+        setError(
+          err.response?.data?.message ||
+            "Failed to fetch results data."
+        );
+      } else {
+        setError("");
+      }
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -140,6 +180,7 @@ const Results = () => {
   };
 
   return (
+    <AdminLayout title="Result Management">
     <div className="page-container">
       <div className="page-header">
         <div>
@@ -233,11 +274,24 @@ const Results = () => {
         </form>
       )}
 
+      {!loading && results.length > 0 && (
+        <input
+          className="table-search"
+          type="search"
+          placeholder="Search by student, exam, subject, entered by or grade..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search results"
+        />
+      )}
+
       <div className="table-container">
         {loading ? (
           <p>Loading results...</p>
         ) : results.length === 0 ? (
           <p>No results found.</p>
+        ) : filteredResults.length === 0 ? (
+          <p>No results match your search.</p>
         ) : (
           <table>
             <thead>
@@ -249,12 +303,13 @@ const Results = () => {
                 <th>Percentage</th>
                 <th>Grade</th>
                 <th>Status</th>
+                <th>Entered By</th>
                 <th>Actions</th>
               </tr>
             </thead>
 
             <tbody>
-              {results.map((result) => (
+              {filteredResults.map((result) => (
                 <tr key={result._id}>
                   <td>
                     {result.student?.name}
@@ -275,6 +330,13 @@ const Results = () => {
                   <td>{result.percentage}%</td>
                   <td>{result.grade}</td>
                   <td>{result.status}</td>
+                  <td>
+                    {result.enteredBy?.name || "—"}
+                    <br />
+                    <span className="table-subtext">
+                      {result.enteredBy?.role || ""}
+                    </span>
+                  </td>
 
                   <td>
                     <button
@@ -299,6 +361,7 @@ const Results = () => {
         )}
       </div>
     </div>
+    </AdminLayout>
   );
 };
 

@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import AdminLayout from "../components/AdminLayout";
 
 const initialFormData = {
   name: "",
@@ -9,6 +10,7 @@ const initialFormData = {
   rollNumber: "",
   department: "",
   semester: "",
+  role: "student",
 };
 
 const Students = () => {
@@ -18,8 +20,18 @@ const Students = () => {
   const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingStudentId, setEditingStudentId] = useState(null);
+  const [search, setSearch] = useState("");
 
   const [formData, setFormData] = useState(initialFormData);
+
+  const query = search.trim().toLowerCase();
+  const filteredStudents = query
+    ? students.filter((student) =>
+        [student.name, student.email, student.rollNumber, student.department]
+          .filter(Boolean)
+          .some((field) => String(field).toLowerCase().includes(query))
+      )
+    : students;
 
   // Fetch all students
   const fetchStudents = async () => {
@@ -60,6 +72,7 @@ const Students = () => {
       rollNumber: student.rollNumber || "",
       department: student.department || "",
       semester: student.semester ?? "",
+      role: student.role || "student",
     });
 
     setShowForm(true);
@@ -81,12 +94,16 @@ const Students = () => {
     setMessage("");
 
     try {
+      // Teachers have no roll number or semester
       const studentData = {
         name: formData.name,
         email: formData.email,
-        rollNumber: formData.rollNumber,
         department: formData.department,
-        semester: Number(formData.semester),
+        role: formData.role,
+        ...(formData.role === "student" && {
+          rollNumber: formData.rollNumber,
+          semester: Number(formData.semester),
+        }),
       };
 
       if (editingStudentId) {
@@ -142,6 +159,7 @@ const Students = () => {
   };
 
   return (
+    <AdminLayout title="Student Management">
     <div className="page-container">
       <div className="page-header">
         <div>
@@ -160,7 +178,7 @@ const Students = () => {
             }
           }}
         >
-          {showForm ? "Cancel" : "Add Student"}
+          {showForm ? "Cancel" : "Add Record"}
         </button>
       </div>
 
@@ -170,8 +188,24 @@ const Students = () => {
       {showForm && (
         <form className="student-form" onSubmit={handleSubmit}>
           <h2>
-            {editingStudentId ? "Edit Student" : "Add New Student"}
+            {editingStudentId
+              ? formData.role === "teacher"
+                ? "Edit Teacher"
+                : "Edit Student"
+              : "Add New Record"}
           </h2>
+
+          <label htmlFor="role">Account Type</label>
+          <select
+            id="role"
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            disabled={Boolean(editingStudentId)}
+          >
+            <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
+          </select>
 
           <input
             name="name"
@@ -207,7 +241,8 @@ const Students = () => {
             placeholder="Roll Number"
             value={formData.rollNumber}
             onChange={handleChange}
-            required
+            required={formData.role === "student"}
+            hidden={formData.role === "teacher"}
           />
 
           <input
@@ -226,7 +261,8 @@ const Students = () => {
             max="8"
             value={formData.semester}
             onChange={handleChange}
-            required
+            required={formData.role === "student"}
+            hidden={formData.role === "teacher"}
           />
 
           <button type="submit">
@@ -239,17 +275,31 @@ const Students = () => {
         </form>
       )}
 
+      {!loading && students.length > 0 && (
+        <input
+          className="table-search"
+          type="search"
+          placeholder="Search by name, email, roll number or department..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search students"
+        />
+      )}
+
       <div className="table-container">
         {loading ? (
           <p>Loading students...</p>
         ) : students.length === 0 ? (
           <p>No students found.</p>
+        ) : filteredStudents.length === 0 ? (
+          <p>No students match your search.</p>
         ) : (
           <table>
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Role</th>
                 <th>Roll Number</th>
                 <th>Department</th>
                 <th>Semester</th>
@@ -258,10 +308,15 @@ const Students = () => {
             </thead>
 
             <tbody>
-              {students.map((student) => (
+              {filteredStudents.map((student) => (
                 <tr key={student._id}>
                   <td>{student.name}</td>
                   <td>{student.email}</td>
+                  <td>
+                    <span className={`role-badge ${student.role}`}>
+                      {student.role}
+                    </span>
+                  </td>
                   <td>{student.rollNumber || "—"}</td>
                   <td>{student.department || "—"}</td>
                   <td>{student.semester ?? "—"}</td>
@@ -288,6 +343,7 @@ const Students = () => {
         )}
       </div>
     </div>
+    </AdminLayout>
   );
 };
 

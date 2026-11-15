@@ -22,7 +22,15 @@ export const AuthProvider = ({ children }) => {
         const response = await api.get("/auth/me");
         setUser(response.data.user);
       } catch (error) {
-        localStorage.removeItem("token");
+        const status = error.response?.status;
+
+        // Only a definitive 401/403 means the session is over. A network
+        // blip or 5xx must not destroy the token — just fail this check
+        // and let the next request surface the real problem.
+        if (status === 401 || status === 403) {
+          localStorage.removeItem("token");
+        }
+
         setUser(null);
       } finally {
         setLoading(false);

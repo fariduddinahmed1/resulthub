@@ -1,15 +1,17 @@
-
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
-import ProtectedRoute from "./components/ProtectedRoute";
+import TeacherDashboard from "./pages/TeacherDashboard";
+import TeacherMarks from "./pages/TeacherMarks";
+import ChangePassword from "./pages/ChangePassword";
 import Students from "./pages/Students";
 import Subjects from "./pages/Subjects";
 import Exams from "./pages/Exams";
 import Results from "./pages/Results";
 import StudentResults from "./pages/StudentResults";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
 import "./App.css";
 
@@ -28,6 +30,10 @@ const HomeRedirect = () => {
     return <Navigate to="/admin" replace />;
   }
 
+  if (user.role === "teacher") {
+    return <Navigate to="/teacher" replace />;
+  }
+
   return <Navigate to="/student" replace />;
 };
 
@@ -38,6 +44,16 @@ function App() {
         <Route path="/" element={<HomeRedirect />} />
 
         <Route path="/login" element={<Login />} />
+
+        {/* Any signed-in role can change their password */}
+        <Route
+          path="/change-password"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "teacher", "student"]}>
+              <ChangePassword />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/admin"
@@ -74,9 +90,26 @@ function App() {
         <Route
           path="/admin/results"
           element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-             <Results />
-          </ProtectedRoute>
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Results />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/teacher"
+          element={
+            <ProtectedRoute allowedRoles={["teacher"]}>
+              <TeacherDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/marks"
+          element={
+            <ProtectedRoute allowedRoles={["teacher"]}>
+              <TeacherMarks />
+            </ProtectedRoute>
           }
         />
 
@@ -93,8 +126,8 @@ function App() {
            element={
           <ProtectedRoute allowedRoles={["student"]}>
              <StudentResults />
-          </ProtectedRoute>
-          }
+           </ProtectedRoute>
+           }
         />
 
         <Route path="*" element={<Navigate to="/" replace />} />

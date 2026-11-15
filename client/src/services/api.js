@@ -24,4 +24,25 @@ api.interceptors.request.use(
   }
 );
 
+// An expired or revoked token means the session is over: clear it and
+// return to login. Skip /auth/me — AuthContext handles that case itself
+// and must not be redirected mid-bootstrap.
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+    const url = error.config?.url || "";
+
+    if (status === 401 && !url.endsWith("/auth/me")) {
+      localStorage.removeItem("token");
+
+      if (window.location.pathname !== "/login") {
+        window.location.assign("/login");
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 export default api;
