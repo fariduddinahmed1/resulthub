@@ -93,8 +93,8 @@ student-result-management-system/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/fariduddinahmed1/student-result-management-system.git
-cd student-result-management-system
+git clone https://github.com/fariduddinahmed1/resulthub.git
+cd resulthub
 ```
 
 ### 2. Configure the Backend
