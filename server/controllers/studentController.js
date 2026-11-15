@@ -154,13 +154,16 @@ export const createStudent = async (req, res) => {
 // GET ALL STUDENTS
 export const getAllStudents = async (req, res) => {
   try {
-    // Optional filter: /students?role=teacher returns only teachers.
+    // Optional filter: /students?role=teacher returns only teachers,
+    // /students?role=student returns only students.
     // Default returns students and teachers (admins are never listed).
     const { role } = req.query;
 
     const filter = role === "teacher"
       ? { role: "teacher" }
-      : { role: { $in: ["student", "teacher"] } };
+      : role === "student"
+        ? { role: "student" }
+        : { role: { $in: ["student", "teacher"] } };
 
     const users = await User.find(filter)
       .select("-password")

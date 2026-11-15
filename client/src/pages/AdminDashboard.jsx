@@ -32,7 +32,7 @@ const AdminDashboard = () => {
         setError("");
 
         const settled = await Promise.allSettled([
-          api.get("/students"),
+          api.get("/students?role=student"),
           api.get("/subjects"),
           api.get("/exams"),
           api.get("/results"),
