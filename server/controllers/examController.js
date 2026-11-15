@@ -239,55 +239,17 @@ export const updateExam = async (req, res) => {
       });
     }
 
-// Protect academic exam configuration when results already exist.
+    // Snapshot the protected configuration before any validation mutates
+    // `exam`, so the check at the end compares against the original values.
+    const originalConfig = {
+      subject: exam.subject?.toString(),
+      examType: exam.examType,
+      academicYear: exam.academicYear,
+      totalMarks: exam.totalMarks,
+      passingMarks: exam.passingMarks
+    };
 
-const protectedFields = [
-  "subject",
-  "examType",
-  "academicYear",
-  "totalMarks",
-  "passingMarks"
-];
-
-const existingResult = await Result.exists({ exam: id });
-
-if (existingResult) {
-  const existingExam = await Exam.findById(id);
-
-  if (!existingExam) {
-   return res.status(404).json({
-    success: false,
-    message: "Exam not found."
-  });
-}
-
-  const hasProtectedChanges = protectedFields.some((field) => {
-    if (req.body[field] === undefined) {
-      return false;
-    }
-
-    const submittedValue = req.body[field];
-    const existingValue = existingExam[field];
-
-    if (field === "subject") {
-      return submittedValue.toString() !== existingValue.toString();
-    }
-
-    if (field === "totalMarks" || field === "passingMarks") {
-      return Number(submittedValue) !== Number(existingValue);
-    }
-
-    return submittedValue !== existingValue;
-  });
-
-  if (hasProtectedChanges) {
-    return res.status(409).json({
-      success: false,
-      message:
-        "Exam configuration cannot be changed because student results already exist. Only the exam title and date can be updated."
-    });
-  }
-}
+    const resultsExist = await Result.exists({ exam: id });
 
 
     // Validate title
@@ -407,6 +369,45 @@ if (existingResult) {
       });
     }
 
+    // Reject changes to exam configuration once student results exist.
+    // Runs after field validation so malformed input gets a 400, not a 409.
+    if (resultsExist) {
+      const protectedFields = [
+        "subject",
+        "examType",
+        "academicYear",
+        "totalMarks",
+        "passingMarks"
+      ];
+
+      const hasProtectedChanges = protectedFields.some((field) => {
+        if (req.body[field] === undefined) {
+          return false;
+        }
+
+        const submittedValue = req.body[field];
+        const existingValue = originalConfig[field];
+
+        if (field === "subject") {
+          return submittedValue.toString() !== existingValue;
+        }
+
+        if (field === "totalMarks" || field === "passingMarks") {
+          return Number(submittedValue) !== Number(existingValue);
+        }
+
+        return submittedValue !== existingValue;
+      });
+
+      if (hasProtectedChanges) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Exam configuration cannot be changed because student results already exist. Only the exam title and date can be updated."
+        });
+      }
+    }
+
     await exam.save();
 
     const updatedExam = await Exam.findById(exam._id)
@@ -474,6 +475,34 @@ export const deleteExam = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error while deleting exam."
+    });
+  }
+};
+
+// GET EXAMS FOR MY SUBJECTS (teacher)
+export const getMyExams = async (req, res) => {
+  try {
+    const subjects = await Subject.find({ teacher: req.user._id })
+      .select("_id");
+
+    const subjectIds = subjects.map((subject) => subject._id);
+
+    const exams = await Exam.find({ subject: { $in: subjectIds } })
+      .populate("subject", "name subjectCode department semester")
+      .sort({ examDate: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: exams.length,
+      exams
+    });
+
+  } catch (error) {
+    console.error("Get my exams error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching your exams."
     });
   }
 };

@@ -12,37 +12,51 @@ export const createStudent = async (req, res) => {
       password,
       rollNumber,
       department,
-      semester
+      semester,
+      role
     } = req.body;
 
-    // Validate required fields
+    // Only students and teachers can be created here; admin accounts are
+    // created exclusively through scripts/createAdmin.js.
+    const isTeacher = role === "teacher";
+    const userRole = isTeacher ? "teacher" : "student";
+
+    // Validate required fields. Teachers don't have roll numbers or
+    // semesters — students do.
     if (
       !name ||
       !email ||
       !password ||
-      !rollNumber ||
       !department ||
-      semester === undefined ||
-      semester === null
+      (!isTeacher &&
+        (!rollNumber ||
+          semester === undefined ||
+          semester === null))
     ) {
       return res.status(400).json({
         success: false,
-        message: "Please provide all student details."
+        message: isTeacher
+          ? "Please provide name, email, password and department."
+          : "Please provide all student details."
       });
     }
 
-    // Validate semester
-    const semesterNumber = Number(semester);
+    // Validate semester (students only)
+    let semesterNumber = null;
 
-    if (
-      !Number.isInteger(semesterNumber) ||
-      semesterNumber < 1 ||
-      semesterNumber > 8
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Semester must be a number between 1 and 8."
-      });
+    if (!isTeacher) {
+      semesterNumber = Number(semester);
+
+      if (
+        !Number.isInteger(semesterNumber) ||
+        semesterNumber < 1 ||
+        semesterNumber > 8
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Semester must be a number between 1 and 8."
+        });
+      }
     }
 
     // Check password length
@@ -57,12 +71,12 @@ export const createStudent = async (req, res) => {
     if (
       typeof name !== "string" ||
       typeof email !== "string" ||
-      typeof rollNumber !== "string" ||
       typeof department !== "string" ||
       !name.trim() ||
       !email.trim() ||
-      !rollNumber.trim() ||
-      !department.trim()
+      !department.trim() ||
+      (!isTeacher &&
+        (typeof rollNumber !== "string" || !rollNumber.trim()))
     ) {
       return res.status(400).json({
         success: false,
@@ -71,14 +85,19 @@ export const createStudent = async (req, res) => {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const normalizedRollNumber = rollNumber.trim().toUpperCase();
+    const normalizedRollNumber = isTeacher
+      ? undefined
+      : rollNumber.trim().toUpperCase();
 
     // Check duplicate email or roll number
+    const orClauses = [{ email: normalizedEmail }];
+
+    if (normalizedRollNumber) {
+      orClauses.push({ rollNumber: normalizedRollNumber });
+    }
+
     const existingStudent = await User.findOne({
-      $or: [
-        { email: normalizedEmail },
-        { rollNumber: normalizedRollNumber }
-      ]
+      $or: orClauses
     });
 
     if (existingStudent) {
@@ -88,20 +107,22 @@ export const createStudent = async (req, res) => {
       });
     }
 
-    // Create student
+    // Create student or teacher
     const student = await User.create({
       name: name.trim(),
       email: normalizedEmail,
       password,
-      rollNumber: normalizedRollNumber,
+      ...(normalizedRollNumber && { rollNumber: normalizedRollNumber }),
       department: department.trim(),
-      semester: semesterNumber,
-      role: "student"
+      ...(semesterNumber !== null && { semester: semesterNumber }),
+      role: userRole
     });
 
     return res.status(201).json({
       success: true,
-      message: "Student created successfully.",
+      message: userRole === "teacher"
+        ? "Teacher created successfully."
+        : "Student created successfully.",
       student: {
         id: student._id,
         name: student.name,
@@ -133,14 +154,22 @@ export const createStudent = async (req, res) => {
 // GET ALL STUDENTS
 export const getAllStudents = async (req, res) => {
   try {
-    const students = await User.find({ role: "student" })
+    // Optional filter: /students?role=teacher returns only teachers.
+    // Default returns students and teachers (admins are never listed).
+    const { role } = req.query;
+
+    const filter = role === "teacher"
+      ? { role: "teacher" }
+      : { role: { $in: ["student", "teacher"] } };
+
+    const users = await User.find(filter)
       .select("-password")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
-      count: students.length,
-      students
+      count: users.length,
+      students: users
     });
 
   } catch (error) {
@@ -167,7 +196,7 @@ export const getStudentById = async (req, res) => {
 
     const student = await User.findOne({
       _id: id,
-      role: "student"
+      role: { $in: ["student", "teacher"] }
     }).select("-password");
 
     if (!student) {
@@ -214,7 +243,7 @@ export const updateStudent = async (req, res) => {
 
     const student = await User.findOne({
       _id: id,
-      role: "student"
+      role: { $in: ["student", "teacher"] }
     });
 
     if (!student) {
@@ -316,13 +345,18 @@ export const updateStudent = async (req, res) => {
       student.semester = semesterNumber;
     }
 
-    // Check for duplicate email or roll number
+    // Check for duplicate email or roll number.
+    // Only include the rollNumber clause when the student actually has one —
+    // an undefined value would corrupt the $or query.
+    const orClauses = [{ email: student.email }];
+
+    if (student.rollNumber != null) {
+      orClauses.push({ rollNumber: student.rollNumber });
+    }
+
     const duplicate = await User.findOne({
       _id: { $ne: student._id },
-      $or: [
-        { email: student.email },
-        { rollNumber: student.rollNumber }
-      ]
+      $or: orClauses
     });
 
     if (duplicate) {
@@ -381,7 +415,7 @@ export const deleteStudent = async (req, res) => {
     // Find student without deleting
     const student = await User.findOne({
       _id: id,
-      role: "student"
+      role: { $in: ["student", "teacher"] }
     });
 
     if (!student) {
@@ -406,7 +440,7 @@ export const deleteStudent = async (req, res) => {
     // Delete only after checking associated results
     await User.findOneAndDelete({
       _id: id,
-      role: "student"
+      role: { $in: ["student", "teacher"] }
     });
 
     return res.status(200).json({

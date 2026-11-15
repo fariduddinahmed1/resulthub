@@ -1,6 +1,31 @@
 import mongoose from "mongoose";
 import Subject from "../models/Subject.js";
 import Exam from "../models/Exam.js";
+import User from "../models/User.js";
+
+// Resolve an optional teacher assignment from the request body.
+// Returns { error } when invalid, { teacherId } otherwise (null = unassigned).
+const resolveTeacher = async (teacher) => {
+  if (teacher === undefined || teacher === null || teacher === "") {
+    return { teacherId: null };
+  }
+
+  if (!mongoose.isValidObjectId(teacher)) {
+    return { error: "Invalid teacher ID." };
+  }
+
+  const existingTeacher = await User.findOne({
+    _id: teacher,
+    role: "teacher"
+  });
+
+  if (!existingTeacher) {
+    return { error: "Teacher not found." };
+  }
+
+  return { teacherId: existingTeacher._id };
+};
+
 export const createSubject = async (req, res) => {
   try {
     const {
@@ -8,7 +33,8 @@ export const createSubject = async (req, res) => {
       subjectCode,
       department,
       semester,
-      credits
+      credits,
+      teacher
     } = req.body;
 
     // Check required fields
@@ -22,6 +48,25 @@ export const createSubject = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "All subject fields are required."
+      });
+    }
+
+    // Reject non-string input before calling string methods on it
+    if (
+      typeof name !== "string" ||
+      typeof subjectCode !== "string" ||
+      typeof department !== "string"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Subject name, code and department must be text."
+      });
+    }
+
+    if (!name.trim() || !subjectCode.trim() || !department.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Subject name, code and department cannot be empty."
       });
     }
 
@@ -55,6 +100,16 @@ export const createSubject = async (req, res) => {
       });
     }
 
+    // Optional teacher assignment
+    const { teacherId, error: teacherError } = await resolveTeacher(teacher);
+
+    if (teacherError) {
+      return res.status(400).json({
+        success: false,
+        message: teacherError
+      });
+    }
+
     // Check duplicate subject code
     const existingSubject = await Subject.findOne({
       subjectCode: normalizedCode
@@ -73,7 +128,8 @@ export const createSubject = async (req, res) => {
       subjectCode: normalizedCode,
       department: normalizedDepartment,
       semester: semesterNumber,
-      credits: creditsNumber
+      credits: creditsNumber,
+      teacher: teacherId
     });
 
     return res.status(201).json({
@@ -90,6 +146,13 @@ export const createSubject = async (req, res) => {
       });
     }
 
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid subject details."
+      });
+    }
+
     console.error("Create subject error:", error);
 
     return res.status(500).json({
@@ -101,6 +164,7 @@ export const createSubject = async (req, res) => {
 export const getAllSubjects = async (req, res) => {
   try {
     const subjects = await Subject.find()
+      .populate("teacher", "name email")
       .sort({ semester: 1, subjectCode: 1 });
 
     return res.status(200).json({
@@ -115,6 +179,28 @@ export const getAllSubjects = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error while fetching subjects."
+    });
+  }
+};
+
+// GET MY SUBJECTS (teacher)
+export const getMySubjects = async (req, res) => {
+  try {
+    const subjects = await Subject.find({ teacher: req.user._id })
+      .sort({ semester: 1, subjectCode: 1 });
+
+    return res.status(200).json({
+      success: true,
+      count: subjects.length,
+      subjects
+    });
+
+  } catch (error) {
+    console.error("Get my subjects error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching your subjects."
     });
   }
 };
@@ -162,7 +248,8 @@ export const updateSubject = async (req, res) => {
       subjectCode,
       department,
       semester,
-      credits
+      credits,
+      teacher
     } = req.body;
 
     // Validate subject ID
@@ -188,7 +275,8 @@ export const updateSubject = async (req, res) => {
       subjectCode === undefined &&
       department === undefined &&
       semester === undefined &&
-      credits === undefined
+      credits === undefined &&
+      teacher === undefined
     ) {
       return res.status(400).json({
         success: false,
@@ -274,6 +362,20 @@ export const updateSubject = async (req, res) => {
       subject.credits = creditsNumber;
     }
 
+    // Optional teacher reassignment (null or "" clears the assignment)
+    if (teacher !== undefined) {
+      const { teacherId, error: teacherError } = await resolveTeacher(teacher);
+
+      if (teacherError) {
+        return res.status(400).json({
+          success: false,
+          message: teacherError
+        });
+      }
+
+      subject.teacher = teacherId;
+    }
+
     await subject.save();
 
     return res.status(200).json({
@@ -336,9 +438,11 @@ export const deleteSubject = async (req, res) => {
       message: "Subject deleted successfully."
     });
   } catch (error) {
+    console.error("Delete subject error:", error);
+
     return res.status(500).json({
       success: false,
-      message: error.message
+      message: "Server error while deleting subject."
     });
   }
 };

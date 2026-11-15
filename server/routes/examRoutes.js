@@ -3,6 +3,7 @@ import express from "express";
 import {
   createExam,
   getAllExams,
+  getMyExams,
   getExamById,
   updateExam,
   deleteExam
@@ -15,14 +16,17 @@ import {
 
 const router = express.Router();
 
-// Only authenticated admins can manage exams
-router.use(protect, authorizeRoles("admin"));
+// All exam routes require authentication
+router.use(protect);
 
-// Exam routes
-router.post("/", createExam);
-router.get("/", getAllExams);
-router.get("/:id", getExamById);
-router.put("/:id", updateExam);
-router.delete("/:id", deleteExam);
+// Teacher: exams for subjects assigned to them
+router.get("/my", authorizeRoles("teacher"), getMyExams);
+
+// Admin: manage exams
+router.post("/", authorizeRoles("admin"), createExam);
+router.get("/", authorizeRoles("admin"), getAllExams);
+router.get("/:id", authorizeRoles("admin"), getExamById);
+router.put("/:id", authorizeRoles("admin"), updateExam);
+router.delete("/:id", authorizeRoles("admin"), deleteExam);
 
 export default router;

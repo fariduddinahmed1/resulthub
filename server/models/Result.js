@@ -36,6 +36,13 @@ const resultSchema = new mongoose.Schema(
       type: String,
       enum: ["Pass", "Fail"],
       required: true
+    },
+
+    // Who entered (or last corrected) this result
+    enteredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
     }
   },
   { timestamps: true }

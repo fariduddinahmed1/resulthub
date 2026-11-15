@@ -36,6 +36,13 @@ const subjectSchema = new mongoose.Schema(
       required: [true, "Credits are required"],
       min: 1,
       max: 10
+    },
+
+    // Teacher assigned to this subject. Null until an admin assigns one.
+    teacher: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
     }
   },
   {

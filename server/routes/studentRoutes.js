@@ -16,22 +16,18 @@ import {
 
 const router = express.Router();
 
-// All student management routes require admin authentication
-router.use(protect, authorizeRoles("admin"));
+// All student routes require authentication
+router.use(protect);
 
-// Create a student
-router.post("/", createStudent);
+// Admin: create students and teachers
+router.post("/", authorizeRoles("admin"), createStudent);
 
-// Get all students
-router.get("/", getAllStudents);
+// Admin and teacher: list users (teachers need the roster for marks entry)
+router.get("/", authorizeRoles("admin", "teacher"), getAllStudents);
 
-// Get one student
-router.get("/:id", getStudentById);
-
-// Update a student
-router.put("/:id", updateStudent);
-
-// Delete a student
-router.delete("/:id", deleteStudent);
+// Admin: manage individual records
+router.get("/:id", authorizeRoles("admin"), getStudentById);
+router.put("/:id", authorizeRoles("admin"), updateStudent);
+router.delete("/:id", authorizeRoles("admin"), deleteStudent);
 
 export default router;

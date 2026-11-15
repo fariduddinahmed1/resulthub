@@ -4,6 +4,7 @@ import {
   createResult,
   getAllResults,
   getMyResults,
+  getMySubjectResults,
   getResultById,
   updateResult,
   deleteResult
@@ -26,11 +27,19 @@ router.get(
   getMyResults
 );
 
-// Admin: manage results
-router.post("/", authorizeRoles("admin"), createResult);
+// Teacher: results for their own subjects (marks entry screen)
+router.get(
+  "/my-subjects",
+  authorizeRoles("teacher"),
+  getMySubjectResults
+);
+
+// Admin manages results; teachers may enter/correct marks for their
+// own subjects (ownership is enforced inside the controllers)
+router.post("/", authorizeRoles("admin", "teacher"), createResult);
 router.get("/", authorizeRoles("admin"), getAllResults);
 router.get("/:id", authorizeRoles("admin"), getResultById);
-router.put("/:id", authorizeRoles("admin"), updateResult);
+router.put("/:id", authorizeRoles("admin", "teacher"), updateResult);
 router.delete("/:id", authorizeRoles("admin"), deleteResult);
 
 export default router;

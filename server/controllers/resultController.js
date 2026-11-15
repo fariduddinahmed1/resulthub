@@ -2,7 +2,9 @@ import mongoose from "mongoose";
 import Result from "../models/Result.js";
 import User from "../models/User.js";
 import Exam from "../models/Exam.js";
+import Subject from "../models/Subject.js";
 import calculateResult from "../utils/calculateResult.js";
+import { canManageSubject } from "../utils/subjectAccess.js";
 export const createResult = async (req, res) => {
   try {
     const { student, exam, marksObtained } = req.body;
@@ -55,6 +57,16 @@ export const createResult = async (req, res) => {
       });
     }
 
+    // Teachers may only enter marks for subjects assigned to them
+    const allowed = await canManageSubject(req.user, existingExam.subject);
+
+    if (!allowed) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only enter marks for your own subjects."
+      });
+    }
+
     // Validate marks
     const marks = Number(marksObtained);
 
@@ -81,6 +93,7 @@ export const createResult = async (req, res) => {
       student,
       exam,
       marksObtained: marks,
+      enteredBy: req.user._id,
       ...calculatedResult
     });
 
@@ -114,6 +127,7 @@ export const getAllResults = async (req, res) => {
         "student",
         "name email rollNumber department semester"
       )
+      .populate("enteredBy", "name role")
       .populate({
         path: "exam",
         select: "title examType academicYear examDate totalMarks passingMarks",
@@ -148,6 +162,7 @@ export const getMyResults = async (req, res) => {
         "student",
         "name email rollNumber department semester"
       )
+      .populate("enteredBy", "name role")
       .populate({
         path: "exam",
         select: "title examType academicYear examDate totalMarks passingMarks",
@@ -170,6 +185,51 @@ export const getMyResults = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error while fetching your results."
+    });
+  }
+};
+
+// GET RESULTS FOR MY SUBJECTS (teacher)
+export const getMySubjectResults = async (req, res) => {
+  try {
+    const subjects = await Subject.find({ teacher: req.user._id })
+      .select("_id");
+
+    const subjectIds = subjects.map((subject) => subject._id);
+
+    const exams = await Exam.find({ subject: { $in: subjectIds } })
+      .select("_id");
+
+    const examIds = exams.map((exam) => exam._id);
+
+    const results = await Result.find({ exam: { $in: examIds } })
+      .populate(
+        "student",
+        "name email rollNumber department semester"
+      )
+      .populate("enteredBy", "name role")
+      .populate({
+        path: "exam",
+        select: "title examType academicYear examDate totalMarks passingMarks",
+        populate: {
+          path: "subject",
+          select: "name subjectCode department semester"
+        }
+      })
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: results.length,
+      results
+    });
+
+  } catch (error) {
+    console.error("Get my subject results error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching results."
     });
   }
 };
@@ -265,6 +325,16 @@ export const updateResult = async (req, res) => {
       });
     }
 
+    // Teachers may only correct marks for subjects assigned to them
+    const allowed = await canManageSubject(req.user, exam.subject);
+
+    if (!allowed) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only edit marks for your own subjects."
+      });
+    }
+
     // Validate updated marks
     const marks = Number(marksObtained);
 
@@ -290,6 +360,7 @@ export const updateResult = async (req, res) => {
     result.percentage = calculatedResult.percentage;
     result.grade = calculatedResult.grade;
     result.status = calculatedResult.status;
+    result.enteredBy = req.user._id;
 
     await result.save();
 
