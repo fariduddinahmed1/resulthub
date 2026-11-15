@@ -132,7 +132,7 @@ npm run create-admin
 
 ### Seed Demo Data (Optional)
 
-Populate the database with a demo dataset — 1 admin, 2 teachers, 8 students, 5 subjects, 8 exams, and 32 results:
+Populate the database with a demo dataset — 1 admin, 3 teachers, 10 students, 6 subjects, 12 exams, and 108 results:
 
 ```bash
 npm run seed
@@ -143,8 +143,8 @@ Demo credentials after seeding:
 | Role | Email | Password |
 |---|---|---|
 | Admin | `admin@example.com` | `Admin@12345678` (or `ADMIN_PASSWORD`) |
-| Teacher | `asha@college.edu`, `rahul@college.edu` | `Password@123` |
-| Students | `aarav@student.edu` … `meera@student.edu` | `Password@123` |
+| Teacher | `asha@college.edu`, `rahul@college.edu`, `priya@college.edu` | `Password@123` |
+| Students | `aarav@student.edu` … `ananya@student.edu` (10 students) | `Password@123` |
 
 ### 4. Start the Backend
 

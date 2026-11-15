@@ -14,15 +14,39 @@ dotenv.config();
 // Replaces ALL data in the database with a fresh demo dataset.
 const DEMO_PASSWORD = "Password@123";
 
+// Subjects taught to both departments (students of either dept take them).
+const SHARED_DEPARTMENT = "CSE & ECE";
+
+const demoTeachers = [
+  { name: "Dr Asha Rao", email: "asha@college.edu", department: "CSE" },
+  { name: "Prof Rahul Menon", email: "rahul@college.edu", department: "CSE" },
+  { name: "Dr Priya Nair", email: "priya@college.edu", department: "ECE" }
+];
+
 const demoStudents = [
+  // CSE — 6 students
   { name: "Aarav Sharma", email: "aarav@student.edu", rollNumber: "CS202601", department: "CSE", semester: 3 },
   { name: "Diya Patel", email: "diya@student.edu", rollNumber: "CS202602", department: "CSE", semester: 3 },
   { name: "Kabir Singh", email: "kabir@student.edu", rollNumber: "CS202603", department: "CSE", semester: 3 },
   { name: "Isha Verma", email: "isha@student.edu", rollNumber: "CS202604", department: "CSE", semester: 3 },
   { name: "Rohan Gupta", email: "rohan@student.edu", rollNumber: "CS202605", department: "CSE", semester: 3 },
+  { name: "Vihaan Reddy", email: "vihaan@student.edu", rollNumber: "CS202606", department: "CSE", semester: 3 },
+  // ECE — 4 students
   { name: "Sara Khan", email: "sara@student.edu", rollNumber: "EC202601", department: "ECE", semester: 3 },
   { name: "Aditya Rao", email: "aditya@student.edu", rollNumber: "EC202602", department: "ECE", semester: 3 },
-  { name: "Meera Nair", email: "meera@student.edu", rollNumber: "EC202603", department: "ECE", semester: 3 }
+  { name: "Meera Nair", email: "meera@student.edu", rollNumber: "EC202603", department: "ECE", semester: 3 },
+  { name: "Ananya Iyer", email: "ananya@student.edu", rollNumber: "EC202604", department: "ECE", semester: 3 }
+];
+
+// 6 subjects: 5 shared by CSE & ECE, Digital Circuits for ECE only.
+// teacherIdx points into demoTeachers.
+const subjectSeeds = [
+  { name: "Data Structures", subjectCode: "CS201", department: SHARED_DEPARTMENT, semester: 3, credits: 4, teacherIdx: 0 },
+  { name: "Operating Systems", subjectCode: "CS202", department: SHARED_DEPARTMENT, semester: 3, credits: 4, teacherIdx: 0 },
+  { name: "Database Management Systems", subjectCode: "CS203", department: SHARED_DEPARTMENT, semester: 3, credits: 4, teacherIdx: 1 },
+  { name: "Signal Systems", subjectCode: "EC201", department: SHARED_DEPARTMENT, semester: 3, credits: 4, teacherIdx: 2 },
+  { name: "Software Engineering", subjectCode: "CS204", department: SHARED_DEPARTMENT, semester: 3, credits: 3, teacherIdx: 1 },
+  { name: "Digital Circuits", subjectCode: "EC202", department: "ECE", semester: 3, credits: 3, teacherIdx: 2 }
 ];
 
 const examSchedule = [
@@ -43,32 +67,23 @@ const seed = async () => {
     ]);
 
     // Admin from .env (same credentials as scripts/createAdmin.js)
-    const admin = await User.create({
+    await User.create({
       name: process.env.ADMIN_NAME || "System Administrator",
       email: (process.env.ADMIN_EMAIL || "admin@example.com").toLowerCase(),
       password: process.env.ADMIN_PASSWORD || "Admin@12345678",
       role: "admin"
     });
-    void admin;
 
-    // Teachers
-    const asha = await User.create({
-      name: "Dr Asha Rao",
-      email: "asha@college.edu",
-      password: DEMO_PASSWORD,
-      department: "CSE",
-      role: "teacher"
-    });
+    // Teachers: 2 CSE, 1 ECE
+    const teachers = await User.create(
+      demoTeachers.map((teacher) => ({
+        ...teacher,
+        password: DEMO_PASSWORD,
+        role: "teacher"
+      }))
+    );
 
-    const rahul = await User.create({
-      name: "Prof Rahul Menon",
-      email: "rahul@college.edu",
-      password: DEMO_PASSWORD,
-      department: "ECE",
-      role: "teacher"
-    });
-
-    // Students
+    // Students: 6 CSE, 4 ECE
     const students = await User.create(
       demoStudents.map((student) => ({
         ...student,
@@ -77,20 +92,17 @@ const seed = async () => {
       }))
     );
 
-    // Subjects (CS210 intentionally has no teacher)
-    const subjects = await Subject.create([
-      { name: "Data Structures", subjectCode: "CS201", department: "CSE", semester: 3, credits: 4, teacher: asha._id },
-      { name: "Operating Systems", subjectCode: "CS205", department: "CSE", semester: 3, credits: 4, teacher: asha._id },
-      { name: "Signals and Systems", subjectCode: "EC201", department: "ECE", semester: 3, credits: 4, teacher: rahul._id },
-      { name: "Digital Circuits", subjectCode: "EC205", department: "ECE", semester: 3, credits: 3, teacher: rahul._id },
-      { name: "Software Engineering", subjectCode: "CS210", department: "CSE", semester: 3, credits: 3, teacher: null }
-    ]);
+    // Subjects
+    const subjects = await Subject.create(
+      subjectSeeds.map(({ teacherIdx, ...subject }) => ({
+        ...subject,
+        teacher: teachers[teacherIdx]._id
+      }))
+    );
 
-    // Two exams per assigned subject
+    // Mid Semester + End Semester exam for every subject
     const examSeeds = [];
     subjects.forEach((subject) => {
-      if (!subject.teacher) return;
-
       examSchedule.forEach(([label, examType, examDate]) => {
         examSeeds.push({
           title: `${subject.subjectCode} ${label}`,
@@ -106,17 +118,18 @@ const seed = async () => {
 
     const exams = await Exam.create(examSeeds);
 
-    // Results for every student in the subject's department + semester.
+    // Results: every student takes shared subjects; Digital Circuits only for ECE.
     // Marks follow a fixed pattern so the demo grade chart has a spread.
     const resultSeeds = [];
 
     exams.forEach((exam, examIdx) => {
       const subject = subjects.find((s) => s._id.equals(exam.subject));
+      const shared = subject.department === SHARED_DEPARTMENT;
 
       students
         .filter(
           (student) =>
-            student.department === subject.department &&
+            (shared || student.department === subject.department) &&
             student.semester === subject.semester
         )
         .forEach((student, studentIdx) => {
@@ -136,9 +149,11 @@ const seed = async () => {
 
     console.log("Seed complete:");
     console.log(`  1 admin    ${process.env.ADMIN_EMAIL || "admin@example.com"}`);
-    console.log("  2 teachers asha@college.edu, rahul@college.edu");
-    console.log(`  ${students.length} students  (all password: ${DEMO_PASSWORD})`);
-    console.log(`  ${subjects.length} subjects, ${exams.length} exams, ${resultSeeds.length} results`);
+    console.log(`  ${teachers.length} teachers  asha@college.edu, rahul@college.edu, priya@college.edu`);
+    console.log(`  ${students.length} students  6 CSE + 4 ECE  (all password: ${DEMO_PASSWORD})`);
+    console.log(`  ${subjects.length} subjects  (5 shared CSE & ECE, Digital Circuits = ECE only)`);
+    console.log(`  ${exams.length} exams  (Mid Semester + End Semester per subject)`);
+    console.log(`  ${resultSeeds.length} results`);
     console.log(`  admin password: ${process.env.ADMIN_PASSWORD || "Admin@12345678"}`);
 
   } catch (error) {
