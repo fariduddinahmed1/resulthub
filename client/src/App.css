@@ -131,6 +131,12 @@
   padding: 36px 5%;
 }
 
+/* Nested inside AdminLayout — the shell already provides padding */
+.admin-content .page-container {
+  padding: 0;
+  max-width: none;
+}
+
 .page-header {
   display: flex;
   align-items: center;
@@ -356,6 +362,48 @@ background: var(--primary-hover);}
   margin-top: 5px;
 }
 
+/* Three-role selector — scoped under .login-form so it beats the
+   generic `.login-form button` rule (which would otherwise win) */
+.login-form .role-selector {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.login-form button.role-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 0;
+  padding: 10px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.login-form button.role-option:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.login-form button.role-option.active {
+  border-color: var(--primary);
+  background: #eef2ff;
+  color: var(--primary);
+}
+
+.role-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
 .login-form input {
   padding: 12px;
   border: 1px solid var(--border);
@@ -441,6 +489,11 @@ background: var(--primary-hover);}
 
   .login-form {
     padding: 25px;
+  }
+
+  .login-form button.role-option {
+    font-size: 12px;
+    padding: 10px 4px;
   }
 }
 
@@ -1162,3 +1215,110 @@ background: var(--primary-hover);}
   }
 }
 
+
+/* ===== Teacher portal additions ===== */
+
+/* Grade distribution bar chart */
+.grade-chart {
+  display: grid;
+  gap: 10px;
+}
+
+.grade-bar-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  gap: 10px;
+}
+
+.grade-label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.grade-bar-track {
+  background: #e2e8f0;
+  border-radius: 6px;
+  height: 14px;
+  overflow: hidden;
+}
+
+.grade-bar-fill {
+  background: var(--primary);
+  height: 100%;
+  border-radius: 6px;
+}
+
+.grade-count {
+  color: #475569;
+  font-size: 13px;
+  text-align: right;
+}
+
+/* Standalone filter selects (outside forms) */
+.filter-select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text-primary);
+  min-width: 240px;
+  max-width: 100%;
+  outline: none;
+}
+
+.filter-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.filter-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.marks-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+/* Role badge in the students table */
+.role-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.role-badge.teacher {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+/* ===== Table search (admin lists) ===== */
+.table-search {
+  width: 100%;
+  padding: 11px 13px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.table-search:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.table-subtext {
+  font-size: 12px;
+  color: #94a3b8;
+  text-transform: capitalize;
+}
