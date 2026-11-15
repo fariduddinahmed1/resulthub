@@ -12,6 +12,7 @@
 ![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-17%20passed-brightgreen)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 </div>
 
@@ -507,15 +508,17 @@ Contributions are welcome!
 4. Open a pull request — **CI must be green** before review
 5. Keep PRs focused: one change per pull request
 
-## 👤 Contributors
+## 👤 Developed by
 
-| | |
-|---|---|
-| **Fariduddin Ahmed** | Author & maintainer — [@fariduddinahmed1](https://github.com/fariduddinahmed1) |
+**Fariduddin Ahmed** — [@fariduddinahmed1](https://github.com/fariduddinahmed1)
+
+This project was solely developed by Fariduddin Ahmed.
 
 ## 📄 License
 
-No license file has been published yet. All rights reserved by the author — reach out before reusing this code.
+Licensed under the **MIT License** — see [LICENSE](LICENSE) for the full text.
+
+Copyright © 2026 Fariduddin Ahmed.
 
 ## 🙏 Acknowledgements
 
