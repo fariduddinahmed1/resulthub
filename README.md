@@ -512,7 +512,6 @@ Contributions are welcome!
 
 **Fariduddin Ahmed** — [@fariduddinahmed1](https://github.com/fariduddinahmed1)
 
-This project was solely developed by Fariduddin Ahmed.
 
 ## 📄 License
 
