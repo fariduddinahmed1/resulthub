@@ -1,16 +1,35 @@
-# React + Vite
+# Student Result Management System — Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + Vite frontend for the Student Result Management System. See the [root README](../README.md) for full setup instructions.
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+cp .env.example .env   # set VITE_API_URL (default: http://localhost:5050/api)
+npm run dev            # runs at http://localhost:5173
+```
 
-## React Compiler
+## Scripts
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Start the Vite dev server with HMR |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Preview the production build locally |
+| `npm run lint` | Lint with Oxlint |
 
-## Expanding the Oxlint configuration
+## Environment
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Copy `.env.example` to `.env`:
+
+```env
+VITE_API_URL=http://localhost:5050/api
+```
+
+`VITE_API_URL` must point at the backend API (see `server/.env.example`).
+
+## Notes
+
+- Role-based portals: `/admin/*` (admin), `/teacher/*` (teacher), `/student/*` (student), plus `/change-password` for all signed-in roles.
+- Student results can be downloaded as a formatted HTML file, generated client-side.

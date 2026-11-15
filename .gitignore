@@ -22,3 +22,8 @@ Thumbs.db
 
 # Editor settings
 .vscode/
+
+# Local working docs (not part of the repo)
+plan.md
+plan2.md
+SESSION_CONTEXT.md
