@@ -125,7 +125,7 @@ const AdminDashboard = () => {
       label: "Total Subjects",
       value: stats.subjects,
       icon: "◤",
-      color: "purple",
+      color: "teal",
     },
     {
       label: "Total Exams",
@@ -216,7 +216,7 @@ const AdminDashboard = () => {
                     <p>Of recorded results</p>
                   </div>
 
-                  <div className="dashboard-card stat-purple">
+                  <div className="dashboard-card stat-teal">
                     <div className="stat-card-top">
                       <span>Passed Results</span>
                     </div>

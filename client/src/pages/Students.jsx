@@ -13,7 +13,15 @@ const initialFormData = {
   role: "student",
 };
 
-const Students = () => {
+// Shared page for both admin sections: /admin/students (role="student")
+// and /admin/teachers (role="teacher").
+const Students = ({ role = "student" }) => {
+  const isTeacher = role === "teacher";
+  const noun = isTeacher ? "Teacher" : "Student";
+  const nounLower = noun.toLowerCase();
+
+  const emptyForm = { ...initialFormData, role };
+
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -22,7 +30,7 @@ const Students = () => {
   const [editingStudentId, setEditingStudentId] = useState(null);
   const [search, setSearch] = useState("");
 
-  const [formData, setFormData] = useState(initialFormData);
+  const [formData, setFormData] = useState(emptyForm);
 
   const query = search.trim().toLowerCase();
   const filteredStudents = query
@@ -33,16 +41,16 @@ const Students = () => {
       )
     : students;
 
-  // Fetch all students
+  // Fetch records for this section only (?role=student / ?role=teacher)
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/students");
+      const response = await api.get(`/students?role=${role}`);
       setStudents(response.data.students);
       setError("");
     } catch (err) {
       setError(
-        err.response?.data?.message || "Failed to fetch students."
+        err.response?.data?.message || `Failed to fetch ${nounLower}s.`
       );
     } finally {
       setLoading(false);
@@ -51,7 +59,8 @@ const Students = () => {
 
   useEffect(() => {
     fetchStudents();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role]);
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -82,7 +91,7 @@ const Students = () => {
 
   // Reset form
   const resetForm = () => {
-    setFormData(initialFormData);
+    setFormData(emptyForm);
     setEditingStudentId(null);
     setShowForm(false);
   };
@@ -107,21 +116,21 @@ const Students = () => {
       };
 
       if (editingStudentId) {
-        // Update existing student
+        // Update existing record
         await api.put(
           `/students/${editingStudentId}`,
           studentData
         );
 
-        setMessage("Student updated successfully!");
+        setMessage(`${noun} updated successfully!`);
       } else {
-        // Add new student
+        // Add new record
         await api.post("/students", {
           ...studentData,
           password: formData.password,
         });
 
-        setMessage("Student added successfully!");
+        setMessage(`${noun} added successfully!`);
       }
 
       resetForm();
@@ -130,16 +139,16 @@ const Students = () => {
       setError(
         err.response?.data?.message ||
           (editingStudentId
-            ? "Failed to update student."
-            : "Failed to add student.")
+            ? `Failed to update ${nounLower}.`
+            : `Failed to add ${nounLower}.`)
       );
     }
   };
 
-  // Delete student
+  // Delete record
   const handleDelete = async (id) => {
     const confirmed = window.confirm(
-      "Are you sure you want to delete this student?"
+      `Are you sure you want to delete this ${nounLower}?`
     );
 
     if (!confirmed) return;
@@ -149,22 +158,22 @@ const Students = () => {
 
     try {
       await api.delete(`/students/${id}`);
-      setMessage("Student deleted successfully!");
+      setMessage(`${noun} deleted successfully!`);
       await fetchStudents();
     } catch (err) {
       setError(
-        err.response?.data?.message || "Failed to delete student."
+        err.response?.data?.message || `Failed to delete ${nounLower}.`
       );
     }
   };
 
   return (
-    <AdminLayout title="Student Management">
+    <AdminLayout title={`${noun} Management`}>
     <div className="page-container">
       <div className="page-header">
         <div>
-          <h1>Student Management</h1>
-          <p>View and manage student records.</p>
+          <h1>{noun} Management</h1>
+          <p>View and manage {nounLower} records.</p>
         </div>
 
         <button
@@ -173,7 +182,7 @@ const Students = () => {
               resetForm();
             } else {
               setEditingStudentId(null);
-              setFormData(initialFormData);
+              setFormData(emptyForm);
               setShowForm(true);
             }
           }}
@@ -188,24 +197,8 @@ const Students = () => {
       {showForm && (
         <form className="student-form" onSubmit={handleSubmit}>
           <h2>
-            {editingStudentId
-              ? formData.role === "teacher"
-                ? "Edit Teacher"
-                : "Edit Student"
-              : "Add New Record"}
+            {editingStudentId ? `Edit ${noun}` : `Add New ${noun}`}
           </h2>
-
-          <label htmlFor="role">Account Type</label>
-          <select
-            id="role"
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            disabled={Boolean(editingStudentId)}
-          >
-            <option value="student">Student</option>
-            <option value="teacher">Teacher</option>
-          </select>
 
           <input
             name="name"
@@ -241,8 +234,8 @@ const Students = () => {
             placeholder="Roll Number"
             value={formData.rollNumber}
             onChange={handleChange}
-            required={formData.role === "student"}
-            hidden={formData.role === "teacher"}
+            required={!isTeacher}
+            hidden={isTeacher}
           />
 
           <input
@@ -261,12 +254,12 @@ const Students = () => {
             max="8"
             value={formData.semester}
             onChange={handleChange}
-            required={formData.role === "student"}
-            hidden={formData.role === "teacher"}
+            required={!isTeacher}
+            hidden={isTeacher}
           />
 
           <button type="submit">
-            {editingStudentId ? "Update Student" : "Save Student"}
+            {editingStudentId ? `Update ${noun}` : `Save ${noun}`}
           </button>
 
           <button type="button" onClick={resetForm}>
@@ -279,30 +272,33 @@ const Students = () => {
         <input
           className="table-search"
           type="search"
-          placeholder="Search by name, email, roll number or department..."
+          placeholder={
+            isTeacher
+              ? "Search by name, email or department..."
+              : "Search by name, email, roll number or department..."
+          }
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          aria-label="Search students"
+          aria-label={`Search ${nounLower}s`}
         />
       )}
 
       <div className="table-container">
         {loading ? (
-          <p>Loading students...</p>
+          <p>Loading {nounLower}s...</p>
         ) : students.length === 0 ? (
-          <p>No students found.</p>
+          <p>No {nounLower}s found.</p>
         ) : filteredStudents.length === 0 ? (
-          <p>No students match your search.</p>
+          <p>No {nounLower}s match your search.</p>
         ) : (
           <table>
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Email</th>
-                <th>Role</th>
-                <th>Roll Number</th>
                 <th>Department</th>
-                <th>Semester</th>
+                {!isTeacher && <th>Roll Number</th>}
+                {!isTeacher && <th>Semester</th>}
                 <th>Actions</th>
               </tr>
             </thead>
@@ -312,14 +308,9 @@ const Students = () => {
                 <tr key={student._id}>
                   <td>{student.name}</td>
                   <td>{student.email}</td>
-                  <td>
-                    <span className={`role-badge ${student.role}`}>
-                      {student.role}
-                    </span>
-                  </td>
-                  <td>{student.rollNumber || "—"}</td>
                   <td>{student.department || "—"}</td>
-                  <td>{student.semester ?? "—"}</td>
+                  {!isTeacher && <td>{student.rollNumber || "—"}</td>}
+                  {!isTeacher && <td>{student.semester ?? "—"}</td>}
                   <td>
                     <button
                       type="button"

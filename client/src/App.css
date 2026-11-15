@@ -83,9 +83,9 @@
 }
 
 .dashboard-nav a:hover {
-  background: #eef2ff;
+  background: #f0fdfa;
   color: var(--primary);
-  border-color: #c7d2fe;
+  border-color: #99f6e4;
 }
 
 /* =================================
@@ -233,7 +233,7 @@ background: var(--primary-hover);}
 .student-form input:focus,
 .student-form select:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
 }
 
 .student-form button {
@@ -395,7 +395,7 @@ background: var(--primary-hover);}
 
 .login-form button.role-option.active {
   border-color: var(--primary);
-  background: #eef2ff;
+  background: #f0fdfa;
   color: var(--primary);
 }
 
@@ -533,7 +533,7 @@ background: var(--primary-hover);}
 .brand-icon {
   width: 42px;
   height: 42px;
-  background: linear-gradient(135deg, #818cf8, #4f46e5);
+  background: linear-gradient(135deg, #2dd4bf, #0d9488);
   border-radius: 12px;
   display: grid;
   place-items: center;
@@ -589,9 +589,9 @@ background: var(--primary-hover);}
 }
 
 .sidebar-link.active {
-  background: #4545a8;
+  background: #0f766e;
   color: white;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
 }
 
 .sidebar-icon {
@@ -613,7 +613,7 @@ background: var(--primary-hover);}
   width: 37px;
   height: 37px;
   border-radius: 50%;
-  background: #3730a3;
+  background: #115e59;
   color: white;
   display: grid;
   place-items: center;
@@ -656,7 +656,7 @@ background: var(--primary-hover);}
 }
 
 .topbar-label {
-  color: #818cf8;
+  color: #2dd4bf;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 1.3px;
@@ -817,13 +817,13 @@ background: var(--primary-hover);}
   color: #2563eb;
 }
 
-.stat-purple {
-  border-top: 3px solid #8b5cf6 !important;
+.stat-teal {
+  border-top: 3px solid #0d9488 !important;
 }
 
-.stat-purple .stat-icon {
-  background: #f5f3ff;
-  color: #7c3aed;
+.stat-teal .stat-icon {
+  background: #f0fdfa;
+  color: #0f766e;
 }
 
 .stat-orange {
@@ -869,17 +869,17 @@ background: var(--primary-hover);}
 }
 
 .quick-access-card:hover {
-  border-color: #a5b4fc;
+  border-color: #5eead4;
   transform: translateY(-2px);
-  box-shadow: 0 7px 18px rgba(79, 70, 229, 0.07);
+  box-shadow: 0 7px 18px rgba(13, 148, 136, 0.07);
 }
 
 .quick-access-icon {
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  background: #eef2ff;
-  color: #4f46e5;
+  background: #f0fdfa;
+  color: #0d9488;
   display: grid;
   place-items: center;
   font-size: 21px;
@@ -1019,11 +1019,11 @@ background: var(--primary-hover);}
   align-items: center;
   gap: 20px;
   padding: 25px;
-  background: linear-gradient(120deg, #3730a3, #6366f1);
+  background: linear-gradient(120deg, #115e59, #14b8a6);
   border-radius: 14px;
   color: white;
   margin-bottom: 25px;
-  box-shadow: 0 7px 20px rgba(79, 70, 229, 0.15);
+  box-shadow: 0 7px 20px rgba(13, 148, 136, 0.15);
 }
 
 .profile-avatar {
@@ -1039,7 +1039,7 @@ background: var(--primary-hover);}
 }
 
 .profile-details span {
-  color: #c7d2fe;
+  color: #99f6e4;
   font-size: 10px;
   letter-spacing: 1px;
   font-weight: 700;
@@ -1052,7 +1052,7 @@ background: var(--primary-hover);}
 }
 
 .profile-details p {
-  color: #e0e7ff;
+  color: #ccfbf1;
   font-size: 12px;
   margin: 2px 0;
 }
@@ -1105,7 +1105,7 @@ background: var(--primary-hover);}
 }
 
 .empty-icon {
-  color: #818cf8;
+  color: #2dd4bf;
   font-size: 38px;
   margin-bottom: 10px;
 }
@@ -1269,7 +1269,7 @@ background: var(--primary-hover);}
 
 .filter-select:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
 }
 
 .filter-select:disabled {
@@ -1296,8 +1296,8 @@ background: var(--primary-hover);}
 }
 
 .role-badge.teacher {
-  background: #ede9fe;
-  color: #5b21b6;
+  background: #f0fdfa;
+  color: #134e4a;
 }
 
 /* ===== Table search (admin lists) ===== */
@@ -1314,7 +1314,7 @@ background: var(--primary-hover);}
 
 .table-search:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
 }
 
 .table-subtext {

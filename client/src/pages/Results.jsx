@@ -48,7 +48,7 @@ const Results = () => {
 
       const settled = await Promise.allSettled([
         api.get("/results"),
-        api.get("/students"),
+        api.get("/students?role=student"),
         api.get("/exams"),
       ]);
 
