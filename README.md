@@ -85,26 +85,6 @@ The system is built as a classic **MERN** monorepo — a React (Vite) single-pag
 
 ---
 
-## 📸 Application Screenshots
-
-### 🌐 Landing Page
-
-![Landing Page](docs/screenshots/landing.png)
-
-### 🛠️ Admin Page
-
-![Admin Page](docs/screenshots/admin.png)
-
-### 👨‍🏫 Teacher Page
-
-![Teacher Page](docs/screenshots/teacher.png)
-
-### 🎓 Student Page
-
-![Student Page](docs/screenshots/student.png)
-
----
-
 ## 🏗️ System Architecture and Workflow
 
 ```mermaid
@@ -287,8 +267,6 @@ resulthub/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml                 # Tests + lint + build pipeline
-├── docs/
-│   └── screenshots/               # README screenshots (landing, admin, teacher, student)
 ├── client/                        # React SPA (Vite)
 │   ├── public/
 │   │   └── favicon.svg            # App logo
