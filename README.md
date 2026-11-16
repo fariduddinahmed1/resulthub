@@ -263,20 +263,11 @@ Open **http://localhost:5173** and log in with the demo credentials:
 
 ## ☁️ Deployment
 
-| Tier | Service | URL |
-|---|---|---|
-| Frontend | **Vercel** (static build of `client/`) 
-| Backend | **Render** (Node service, root `server/`) 
-| Database | **MongoDB Atlas** 
-
-**How the pieces connect:**
-
-- **Vercel** serves the built React SPA; `client/vercel.json` rewrites all routes to `index.html` so client-side routing works on refresh.
-- The frontend reads `VITE_API_URL` **at build time** → baked into the bundle as `https://resulthub-rkux.onrender.com/api`.
-- **Render** builds with `npm install` and starts with `npm start`, configured with env vars `MONGODB_URI`, `JWT_SECRET`, and `CLIENT_URL` (set to the Vercel URL — the server's CORS allow-list).
-- Both environments share the same **Atlas** database.
-
-> ⚠️ Render's free tier sleeps after ~15 minutes without visitors — the first request then takes ~30–50 seconds to wake the service. Later requests are instant.
+| Tier | Service |
+|---|---|
+| Frontend | **Vercel** (static build of `client/`) |
+| Backend | **Render** (Node service, root `server/`) |
+| Database | **MongoDB Atlas** |
 
 ---
 
